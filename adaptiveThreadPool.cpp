@@ -13,7 +13,7 @@ adaptiveThreadPool::adaptiveThreadPool(void*(task)(void*),const int maxsize):
     sem_init(&sem,0,0);
     sem_init(&tids_sem,0,1);
     queueOne();
-}; 
+} 
 
 void *
 waitAndRun(void *voidatp)

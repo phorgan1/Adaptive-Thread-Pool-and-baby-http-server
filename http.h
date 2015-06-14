@@ -15,11 +15,13 @@
           |   _____________________|__
          / \ /                        \
          urn:example:animal:ferret:nose
+
+URI scheme from RFC 2396 - Uniform Resource Identifier (URI): General Syntax
 */
 
 std::string file2string(std::string filename);
 
-// check ranges from rfc 2616 (http)
+// check ranges from RFC 2616 (http)
 inline bool isalpha(const char& c)
 {
     return (c>=0x41 && c<=0x5a) || (c>=0x61 && c<=0x7a);
@@ -34,7 +36,7 @@ inline bool isalphanum(const char& c)
 }
 inline bool ishexdigit(const char& c)
 {
-    return (c>=0x41 && c<=0x46) || (c>=0x61 && c<=0x66);
+    return (c>=0x41 && c<=0x46) || (c>=0x61 && c<=0x66) || isdigit(c);
 }
 inline bool isgendelim(const char& c)
 {
@@ -82,8 +84,8 @@ public:
     authority& operator=(const authority&);
     std::string to_string() const;
     bool is_valid() const { return true; };
-    const std::string& get_host(){ return host; };
-    const std::string& get_port(){ return port; };
+    const std::string& get_host() const { return host; };
+    const std::string& get_port() const { return port; };
 private:
     std::string userinfo;
     std::string host;
@@ -101,8 +103,9 @@ public:
     std::string to_string() const;
     std::string get_ext();
     std::string& get_path(){return path;}
-    const std::string& get_host(){ return auth.get_host(); };
-    const std::string& get_port(){ return auth.get_port(); };
+    const std::string& get_host() const { return auth.get_host(); };
+    const std::string& get_port() const { return auth.get_port(); };
+    const std::string& get_query() const { return query; };
 private:
     std::string scheme;
     authority auth;
@@ -122,6 +125,7 @@ public:
     std::string get_ext(){ return theuri.get_ext(); };
     const std::string& get_path(){ return theuri.get_path(); };
     std::string get_uri() const{ return theuri.to_string(); };
+    std::string get_query() const{ return theuri.get_query(); };
     const std::string& get_method(){ return method; }
     std::string get_major_release();
     std::string get_minor_release();

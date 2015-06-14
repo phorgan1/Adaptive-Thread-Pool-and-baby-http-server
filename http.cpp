@@ -99,7 +99,7 @@ file2string(std::string filename)
     file.seekg(0,std::ios::end);
     std::streampos length = file.tellg();
     file.seekg(0,std::ios::beg);
-    // Get a vector that size and
+    // Get a string that size and fill it
     std::string s(length,0);
     file.read(&s[0],length);
     file.close();
@@ -164,7 +164,7 @@ fileblob::fileblob(std::string filename):stringvalid(false)
 
 // copy constructor for authority
 authority::authority(const authority&a):
-    userinfo(a.userinfo),host(a.host),port(a.port){};
+    userinfo(a.userinfo),host(a.host),port(a.port){}
 
 // usual use is to get a string and parse it
 authority::authority(std::string s)
@@ -195,11 +195,11 @@ authority::operator=(const authority& a)
 }
 
 // simplified version gets a host and port explicitly
-authority::authority(std::string h,std::string p):host(h),port(p){};
+authority::authority(std::string h,std::string p):host(h),port(p){}
 
 // explicit user host and port
 authority::authority(std::string u,std::string h,std::string p):
-    userinfo(u),host(h),port(p){};
+    userinfo(u),host(h),port(p){}
 
 // Convert the authority back to uri text
 std::string 

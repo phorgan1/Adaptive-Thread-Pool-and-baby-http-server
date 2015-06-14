@@ -9,6 +9,22 @@
 #include <errno.h>
 #include <iostream>
 
+class
+job_queue_empty: public std::exception
+{
+public:
+    job_queue_empty(){};
+    virtual ~job_queue_empty() throw() {};
+};
+class
+jq_semaphore_unavailable: public std::exception
+{
+public:
+    jq_semaphore_unavailable(){};
+    virtual ~jq_semaphore_unavailable() throw() {};
+};
+
+template<typename T>
 class jobQueue
 {
 public:
@@ -18,21 +34,27 @@ public:
     };
 
     void
-    push(int sd){
+    push(T job){
 	pthread_mutex_lock(&lock);  // got the lock
-	jobs.push(sd);		    // now add the job
+	jobs.push(job);		    // now add the job
 	sem_post(&sem);		    // post so that the threads know
 	pthread_mutex_unlock(&lock);// unleash the horses
     }
+
+    size_t size() { return jobs.size(); }
     int num_jobs(){ return jobs.size(); }
 
-    int
+    T
     pop(){
-	// returns -1 if there's nothing to pop
-	int sd,retval;
+	// throws job_queue_empty if there's nothing to pop
+	T job;
+	int retval;
 	pthread_mutex_lock(&lock);
 	if(jobs.empty()){
-	    sd=-1;
+	    // we need to throw here as well
+	    //sd=-1;
+	    pthread_mutex_unlock(&lock);
+	    throw job_queue_empty();
 	}else{
 	    // we think there's a job, but wait_and_pop() could have 
 	    // grabbed the semaphore and be waiting for us to release the
@@ -45,38 +67,51 @@ public:
 		//         we tell a thread to die
 		// EAGAIN - only for sem_trywait - this could be it
 		// return -1 so we harm none.
-		sd=-1;
+		pthread_mutex_unlock(&lock);
+		throw jq_semaphore_unavailable();
 	    }else{
-		sd=jobs.front();
+		// semantics of std::queue require front to get a copy, and
+		// pop to get the original off.  If you do either one without
+		// have anything in the queue you've entered undefined behavior
+		// luckily, there's something, or we couldn't have got the 
+		// semaphore.  push() locks the lock, pushes a job on the 
+		// queue (really a file descriptor from a socket), posts
+		// the semaphore and then unlocks the lock.  That means we
+		// could not have gotten in here in the middle since we need
+		// the lock to get into pop()
+		job=jobs.front();
 		jobs.pop();
 	    }
 	}
 	pthread_mutex_unlock(&lock);
-	return sd;
+	return job;
     }
 
-    int
+    T
     wait_and_pop()
     {
 	// will not return until it can return to us a socket descriptor
-	int sd,retval;
+
+	T job;
+	int retval;
 	retval=sem_wait(&sem);
 	if(retval==-1){
 	    // one of
 	    // EINTR - this could have happened on purpose.  This is how
 	    //         we tell a thread to die
 	    // if it does, return -1 so we harm none.
-	    return -1;
+	    // we'll have to throw here.
+	    throw job_queue_empty();
 	}
 	pthread_mutex_lock(&lock);
-	sd=jobs.front();
+	job=jobs.front();
 	jobs.pop();
 	pthread_mutex_unlock(&lock);
-	return sd;
+	return job;
     }
 private:
     pthread_mutex_t lock;
     sem_t sem;
-    std::queue<int> jobs;
+    std::queue<T> jobs;
 };
 #endif

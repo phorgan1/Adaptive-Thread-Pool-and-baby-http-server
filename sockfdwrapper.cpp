@@ -30,6 +30,10 @@ sockfdwrapper::sockfdwrapper(int i):fd(i),valid(true),open(true),epoll_fd(0)
 sockfdwrapper::~sockfdwrapper()
 {
     if(epoll_fd){
+	// if we had an opened socket try to close it.  It can fail, and
+	// if so would return -1 and set errno.  We don't check it because
+	// we're destroying the socket wrapper and no longer care about the
+	// state of the socket
 	::close(epoll_fd);
     }
 }
@@ -115,6 +119,9 @@ sockfdwrapper::getbytes()
     }
 
     while(1){	// loop so that we can continue if a signal interrupts the epoll
+	// the 15000 ms timeout means that the epoll will return in 15 seconds
+	// whether anything is there or not.  We check for <= 0 for the 
+	// return value.  0 would mean we timed out, -1 means an error.
 	if((num_events=epoll_wait(epoll_fd,events,MAX_EVENTS,15000))<=0){
 	    if(num_events==-1){
 		if(errno==EINTR){
@@ -134,16 +141,23 @@ sockfdwrapper::getbytes()
 		    continue;
 		}else if(fd==events[ctr].data.fd){
 		    // this is us!  Data is available to be read
-		    size_t nbytes;
-		    if((nbytes=recv(fd,end,RECV_BUF_SIZ-(begin-end),0))<=0){
-			if(nbytes==0){
-			    //other side closed socket
-			    std::cerr << "sockfdwrapper::getbytes() - other end shutdown in an orderly fashion.\n";
-			    open=false;
+		    while(1){
+			ssize_t nbytes;
+			if((nbytes=recv(fd,end,RECV_BUF_SIZ-(begin-end),0))<=0){
+			    if(nbytes==0){
+				//other side did orderly close of socket
+				std::cerr << "sockfdwrapper::getbytes() - other end shutdown in an orderly fashion.\n";
+				open=false;
+			    }
+			    break;
+			}else if(nbytes==-1){
+			    // handle error cases
+			    continue;
+			}else{
+			    // got some bytes
+			    end+=nbytes;
+			    break;
 			}
-		    }else{
-			// got some bytes
-			end+=nbytes;
 		    }
 		}
 	    }

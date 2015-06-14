@@ -538,6 +538,10 @@ log_request(sockfdwrapper& sfd,http_request_line&hrl, std::map<std::string,std::
 /**
  one_request is the entry point for a thread handling one request
  browserFDPointer is a pointer to our wrapper for an fd
+ At entry, a client has contacted us, a socket connection exists, but we
+ haven't talked to them yet.
+ \param browserFDPointer a pointer to the file descriptor of the connection.
+ \return void *
  */
 
 void *
@@ -643,7 +647,7 @@ int main(int argc, char *argv[])
 
     //numCPU not currently used but can be used to make decisions about
     //number of thread or whether to let the master thread do any jobs
-    size_t numCPU;
+    ssize_t numCPU;
     if(((numCPU = sysconf( _SC_NPROCESSORS_ONLN ))==-1)&&errno==EINVAL){
 	numCPU=1;
     }
@@ -654,6 +658,8 @@ int main(int argc, char *argv[])
     /* get the master listen_sock */
     if((listen_sock=createBindAndListenNonBlockingSocket("8080")) ==-1){
 	error_exit("We couldn't create and bind and listen on a socket",1);
+    }else{
+	std::cout << "Listening on localhost:8080\n";
     }
      
     // If you aren't used to epoll there are three steps

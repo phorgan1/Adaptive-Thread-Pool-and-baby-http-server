@@ -21,7 +21,7 @@ private:
     adaptiveThreadPool(const adaptiveThreadPool&);
     void queueOne(void);
     const adaptiveThreadPool& operator=(const adaptiveThreadPool&);
-    class jobQueue jq;
+    class jobQueue<int> jq;
     void *(*task)(void *);
     sem_t sem;			// count threads
     std::vector<pthread_t> tids;

@@ -50,10 +50,13 @@ public:
     bool is_valid(){ return valid==true; };
     ~sockfdwrapper();
 private:
+    // we don't use or allow default or copy constructors, or the 
+    // assignment operator, so they are here
+    // in the private section and have no implementation
     sockfdwrapper();
     sockfdwrapper(const sockfdwrapper&);
-    ssize_t getbytes(void);
     const sockfdwrapper& operator=(const sockfdwrapper&);
+    ssize_t getbytes(void);
     int fd;
     bool valid;
     bool open;
